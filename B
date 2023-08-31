@@ -1,0 +1,228 @@
+import pygame
+import pygame.font
+import sys
+import random
+
+# Initialize Pygame
+pygame.init()
+WIDTH, HEIGHT = 800, 600
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Monkey Bird")
+
+
+def menu_screen():
+    font = pygame.font.Font(None, 36)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return
+
+        WIN.blit(BG_IMG, (0, 0))
+        WIN.blit(BIRD_IMG, BIRD_IMG.get_rect(center=(50, HEIGHT // 2)))
+
+        text_surface = font.render("Press SPACE to start", True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        WIN.blit(text_surface, text_rect)
+
+        pygame.display.update()
+        pygame.time.Clock().tick(60)
+
+class Pipe:
+    def __init__(self, rect, img):
+        self.rect = rect
+        self.img = img
+        self.passed = False
+
+# In the generate_pipe function:
+def generate_pipe():
+    pipe_height = random.randint(200, HEIGHT - 200)
+    bottom_pipe = Pipe(PIPE1_IMG.get_rect(midtop=(WIDTH, pipe_height)), PIPE1_IMG)
+    top_pipe = Pipe(PIPE2_IMG.get_rect(midbottom=(WIDTH, pipe_height - 200)), PIPE2_IMG)
+    return (bottom_pipe, top_pipe)  # return a tuple of pipes
+# Set up the display
+WIDTH, HEIGHT = 800, 600
+WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Monkey Bird")
+
+
+def menu_screen():
+    font = pygame.font.Font(None, 36)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return
+
+        WIN.blit(BG_IMG, (0, 0))
+        WIN.blit(BIRD_IMG, BIRD_IMG.get_rect(center=(50, HEIGHT // 2)))
+
+        text_surface = font.render("Press SPACE to start", True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        WIN.blit(text_surface, text_rect)
+
+        pygame.display.update()
+        pygame.time.Clock().tick(60)
+
+class Pipe:
+    def __init__(self, rect, img):
+        self.rect = rect
+        self.img = img
+        self.passed = False
+
+# In the generate_pipe function:
+def generate_pipe():
+    pipe_height = random.randint(200, HEIGHT - 200)
+    bottom_pipe = Pipe(PIPE1_IMG.get_rect(midtop=(WIDTH, pipe_height)), PIPE1_IMG)
+    top_pipe = Pipe(PIPE2_IMG.get_rect(midbottom=(WIDTH, pipe_height - 200)), PIPE2_IMG)
+    return (bottom_pipe, top_pipe)  # return a tuple of pipes
+
+# Modify the check_collision function:
+def check_collision(bird_rect, pipes):
+    for pipe_pair in pipes:  # now each item in pipes is a tuple
+        for pipe in pipe_pair:  # loop over the pair
+            if bird_rect.colliderect(pipe.rect) and not pipe.passed:
+                return True
+    return False
+
+
+BG_IMG = pygame.image.load("lawn.png")
+BIRD_IMG = pygame.image.load("prof.png")
+PIPE1_IMG = pygame.image.load("V_Cone.png")
+PIPE2_IMG = pygame.image.load("A_Cone.png")
+
+def compute_pipe_interval(pipe_counter):
+    # Start at 1500 ms and subtract 2 ms for each pipe passed.
+    # Clamp the lower value at 200 ms for a reasonable game challenge.
+    return max(1500 - int(pipe_counter) * 100, 200)
+
+def main():
+    last_pipe_time = pygame.time.get_ticks()
+    bird_rect = BIRD_IMG.get_rect(center=(100, HEIGHT//2))
+    gravity = 0.25
+    bird_movement = 0.1
+    pipe_list = []
+    SPAWN_PIPE = pygame.USEREVENT
+    pipe_spawn_interval = 1500
+
+    font = pygame.font.Font(None, 36)
+
+    # Initialize the pipe counter
+    pipe_counter = 0
+    last_pipe_time = pygame.time.get_ticks()
+    pipe_spawn_interval = 1500
+    bird_velocity = 0
+    while True:
+        current_time = pygame.time.get_ticks()
+        if current_time > last_pipe_time + pipe_spawn_interval:
+            pipe_list.append(generate_pipe())  # use append instead of extend
+            last_pipe_time = current_time
+            pipe_spawn_interval = compute_pipe_interval(pipe_counter)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bird_movement = 0
+                    bird_movement -= 7
+                if event.key == pygame.K_q:
+                    bird_velocity += 20
+                if event.key == pygame.K_w:
+                    bird_velocity += -10
+
+
+
+            if event.type == SPAWN_PIPE:
+                pipe_list.append(generate_pipe())  # use append instead of extend
+
+        bird_rect.centerx += bird_velocity
+        bird_velocity *= 0.9
+        bird_movement += gravity
+        bird_rect.centery += bird_movement
+        if bird_rect.top <= -100 or bird_rect.bottom >= HEIGHT:
+            game_over_screen(pipe_counter)
+            bird_rect = BIRD_IMG.get_rect(center=(50, HEIGHT // 2))
+            bird_movement = 0
+            pipe_list.clear()
+            pipe_counter = 0  # Reset the pipe counter
+            last_pipe_time = current_time
+            pipe_spawn_interval = 1500
+        if check_collision(bird_rect, pipe_list):
+            game_over_screen(pipe_counter)  # Show the game over screen
+            bird_rect = BIRD_IMG.get_rect(center=(50, HEIGHT // 2))
+            bird_movement = 0
+            pipe_list.clear()
+            pipe_counter = 0  # Reset the pipe counter
+            last_pipe_time = current_time
+            pipe_spawn_interval = 1500
+
+        WIN.blit(BG_IMG, (0, 0))
+
+        for pipe_pair in pipe_list:
+            for pipe in pipe_pair:
+                pipe.rect.x -= 5
+                if pipe.rect.bottom >= HEIGHT:
+                    WIN.blit(pipe.img, pipe.rect)
+                else:
+                    WIN.blit(pipe.img, pipe.rect)
+                if pipe.rect.centerx < bird_rect.centerx and not pipe.passed:
+                    pipe.passed = True
+                    pipe_counter += .5
+
+                    pipe_spawn_interval = compute_pipe_interval(pipe_counter)
+
+        WIN.blit(BIRD_IMG, bird_rect)
+
+        # Render the pipe counter
+        score_surface = font.render(f"Score: {pipe_counter}", True, (255, 255, 255))
+        score_rect = score_surface.get_rect(center=(WIDTH // 2, 50))
+        WIN.blit(score_surface, score_rect)
+
+        pygame.display.update()
+        pygame.time.Clock().tick(120)
+        
+def game_over_screen(score):
+    font = pygame.font.Font(None, 36)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    return
+
+        WIN.blit(BG_IMG, (0, 0))
+        WIN.blit(BIRD_IMG, BIRD_IMG.get_rect(center=(50, HEIGHT // 2)))
+
+        game_over_surface = font.render("It's Joever", True, (255, 255, 255))
+        game_over_rect = game_over_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+        WIN.blit(game_over_surface, game_over_rect)
+
+        score_surface = font.render(f"Score: {score}", True, (255, 255, 255))
+        score_rect = score_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        WIN.blit(score_surface, score_rect)
+
+        restart_surface = font.render("Press SPACE to play again", True, (255, 255, 255))
+        restart_rect = restart_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+        WIN.blit(restart_surface, restart_rect)
+
+        pygame.display.update()
+        pygame.time.Clock().tick(60)
+
+if __name__ == "__main__":
+    menu_screen()
+    main()
